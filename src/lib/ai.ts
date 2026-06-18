@@ -101,10 +101,10 @@ export async function getAIResponse(
 
 export const AI_MODELS = {
   GOOGLE: [
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Fast & Free)', provider: 'GOOGLE' },
-    { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash-8B (Fastest)', provider: 'GOOGLE' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Most Capable)', provider: 'GOOGLE' },
-    { id: 'gemini-1.0-pro', name: 'Gemini 1.0 Pro (Legacy)', provider: 'GOOGLE' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Fastest)', provider: 'GOOGLE' },
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Most Capable)', provider: 'GOOGLE' },
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'GOOGLE' },
+    { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', provider: 'GOOGLE' },
   ],
   ANTHROPIC: [
     { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku', provider: 'ANTHROPIC' },

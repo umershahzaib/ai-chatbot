@@ -35,10 +35,10 @@ interface Chat {
 }
 
 const AI_MODELS = [
-  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Fast & Free)', provider: 'GOOGLE' },
-  { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash-8B (Fastest)', provider: 'GOOGLE' },
-  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Most Capable)', provider: 'GOOGLE' },
-  { id: 'gemini-1.0-pro', name: 'Gemini 1.0 Pro (Legacy)', provider: 'GOOGLE' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Fastest)', provider: 'GOOGLE' },
+  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Most Capable)', provider: 'GOOGLE' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'GOOGLE' },
+  { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', provider: 'GOOGLE' },
   { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku', provider: 'ANTHROPIC' },
   { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', provider: 'ANTHROPIC' },
   { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', provider: 'ANTHROPIC' },
@@ -111,7 +111,7 @@ export default function ChatPage() {
       id: Date.now().toString(),
       title: 'New Chat',
       messages: [],
-      model: 'gemini-1.5-flash', // Default to Gemini 1.5 Flash (free tier)
+      model: 'gemini-2.5-flash', // Default to Gemini 2.5 Flash
       provider: 'GOOGLE',
       createdAt: Date.now(),
       updatedAt: Date.now(),
