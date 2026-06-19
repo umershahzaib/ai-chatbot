@@ -1,5 +1,7 @@
 # AI Chat Bot - No Auth Version
 
+https://ai-chatbot-ruho.vercel.app/
+
 A modern, full-stack AI chat application built with Next.js 16, featuring multiple AI models (GPT-4, Claude) without authentication requirements.
 
 ## Features
