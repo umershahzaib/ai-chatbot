@@ -5,8 +5,18 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'AI Chat Bot - Your Intelligent Conversation Partner',
-  description: 'Chat with advanced AI models including GPT-4, Claude, and more. Professional AI chat platform for everyone.',
+  title: 'Umer Shahzaib - Full Stack Developer & AI Enthusiast',
+  description: 'Portfolio of Umer Shahzaib - Full Stack Developer specializing in AI-powered web applications with Next.js, React, and Google Gemini AI. Explore projects, skills, and get in touch.',
+  keywords: 'Umer Shahzaib, Full Stack Developer, AI Developer, Next.js, React, TypeScript, Google Gemini, Portfolio, Web Development',
+  authors: [{ name: 'Umer Shahzaib' }],
+  creator: 'Umer Shahzaib',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    title: 'Umer Shahzaib - Full Stack Developer & AI Enthusiast',
+    description: 'Portfolio showcasing AI-powered web applications and modern development skills',
+    siteName: 'Umer Shahzaib Portfolio',
+  },
 }
 
 export default function RootLayout({
@@ -15,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <body className={inter.className}>
         {children}
         <Toaster />
