@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ThemeToggle } from '@/components/theme-toggle'
 import {
   Bot,
   Code2,
@@ -82,27 +83,28 @@ export default function HomePage() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <Bot className="h-6 w-6 text-primary" />
+          <Link href="/" className="flex items-center space-x-2 group">
+            <Bot className="h-6 w-6 text-primary transition-transform group-hover:scale-110" />
             <span className="font-bold text-xl">Umer Shahzaib</span>
           </Link>
-          <nav className="flex items-center space-x-6">
-            <Link href="#about" className="text-sm hover:text-primary transition hidden md:inline">
+          <nav className="flex items-center space-x-4 md:space-x-6">
+            <Link href="#about" className="text-sm font-medium hover:text-primary transition hidden md:inline">
               About
             </Link>
-            <Link href="#skills" className="text-sm hover:text-primary transition hidden md:inline">
+            <Link href="#skills" className="text-sm font-medium hover:text-primary transition hidden md:inline">
               Skills
             </Link>
-            <Link href="#projects" className="text-sm hover:text-primary transition hidden md:inline">
+            <Link href="#projects" className="text-sm font-medium hover:text-primary transition hidden md:inline">
               Projects
             </Link>
-            <Link href="#contact" className="text-sm hover:text-primary transition hidden md:inline">
+            <Link href="#contact" className="text-sm font-medium hover:text-primary transition hidden md:inline">
               Contact
             </Link>
+            <ThemeToggle />
             <Link href="/chat">
-              <Button size="sm">
+              <Button size="sm" className="group">
                 Try AI Chat
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
           </nav>

@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Card } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -12,10 +11,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Send, Bot, User, Loader2, MessageSquare, Home, Trash2 } from 'lucide-react'
+import {
+  Send,
+  Bot,
+  User,
+  Loader2,
+  MessageSquare,
+  Home,
+  Trash2,
+  Menu,
+  X,
+  Copy,
+  Check,
+  Sparkles,
+  Plus,
+  MoreVertical
+} from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { toast } from '@/components/ui/use-toast'
+import { ThemeToggle } from '@/components/theme-toggle'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface Message {
   id: string
@@ -38,7 +54,6 @@ const AI_MODELS = [
   { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'GOOGLE' },
 ]
 
-// Valid model IDs that exist in the APIs
 const VALID_MODEL_IDS = AI_MODELS.map(m => m.id)
 
 export default function ChatPage() {
@@ -47,15 +62,15 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Handle client-side mounting first
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Load chats from localStorage only after mounting
   useEffect(() => {
     if (!mounted) return
 
@@ -72,18 +87,15 @@ export default function ChatPage() {
           createNewChat()
         }
       } else {
-        // No saved chats, create first one
         createNewChat()
       }
     } catch (error) {
       console.error('Error loading chats:', error)
-      // Clear corrupted data and start fresh
       localStorage.removeItem('ai-chats')
       createNewChat()
     }
   }, [mounted])
 
-  // Save chats to localStorage whenever they change (only on client)
   useEffect(() => {
     if (mounted && chats.length > 0) {
       localStorage.setItem('ai-chats', JSON.stringify(chats))
@@ -98,6 +110,16 @@ export default function ChatPage() {
     scrollToBottom()
   }, [currentChatId, chats])
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false)
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const currentChat = chats.find(c => c.id === currentChatId)
 
   const createNewChat = () => {
@@ -105,13 +127,14 @@ export default function ChatPage() {
       id: Date.now().toString(),
       title: 'New Chat',
       messages: [],
-      model: 'gemini-2.5-flash', // Default to Gemini 2.5 Flash
+      model: 'gemini-2.5-flash',
       provider: 'GOOGLE',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }
     setChats(prev => [newChat, ...prev])
     setCurrentChatId(newChat.id)
+    setSidebarOpen(false)
   }
 
   const deleteChat = (chatId: string) => {
@@ -128,6 +151,24 @@ export default function ChatPage() {
     }
   }
 
+  const copyToClipboard = async (text: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedId(messageId)
+      setTimeout(() => setCopiedId(null), 2000)
+      toast({
+        title: 'Copied!',
+        description: 'Message copied to clipboard',
+      })
+    } catch (error) {
+      toast({
+        title: 'Failed to copy',
+        description: 'Could not copy message to clipboard',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -136,7 +177,6 @@ export default function ChatPage() {
     const userMessage = input.trim()
     setInput('')
 
-    // Validate model before sending
     if (!VALID_MODEL_IDS.includes(currentChat.model)) {
       toast({
         title: 'Invalid Model',
@@ -146,7 +186,6 @@ export default function ChatPage() {
       return
     }
 
-    // Add user message
     const newUserMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -157,7 +196,6 @@ export default function ChatPage() {
     const updatedMessages = [...currentChat.messages, newUserMessage]
     updateChatMessages(currentChat.id, updatedMessages)
 
-    // Update title if first message
     if (currentChat.messages.length === 0) {
       updateChatTitle(currentChat.id, userMessage.slice(0, 50))
     }
@@ -185,7 +223,6 @@ export default function ChatPage() {
         throw new Error(data.error || 'Failed to get response')
       }
 
-      // Add AI response
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -201,7 +238,6 @@ export default function ChatPage() {
         description: error.message || 'Failed to send message',
         variant: 'destructive',
       })
-      // Remove the optimistic user message on error
       updateChatMessages(currentChat.id, currentChat.messages)
     } finally {
       setLoading(false)
@@ -245,206 +281,341 @@ export default function ChatPage() {
     }
   }
 
-  // Prevent hydration mismatch by showing loading until mounted
   if (!mounted) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading chat...</p>
+          <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Mobile Overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
-      <aside className="w-64 border-r bg-card flex flex-col">
-        <div className="p-4 border-b">
-          <Link href="/" className="flex items-center space-x-2">
-            <Bot className="h-6 w-6 text-primary" />
-            <span className="font-bold text-lg">AI Chat Bot</span>
+      <motion.aside
+        initial={false}
+        animate={{ x: sidebarOpen ? 0 : -280 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className={`
+          fixed lg:relative inset-y-0 left-0 z-50
+          w-[280px] border-r border-border/50 bg-background
+          flex flex-col
+          lg:translate-x-0
+        `}
+      >
+        {/* Sidebar Header */}
+        <div className="h-14 px-3 flex items-center justify-between border-b border-border/50">
+          <Link href="/" className="flex items-center gap-2 px-2 hover:opacity-80 transition-opacity">
+            <Bot className="h-5 w-5 text-primary" />
+            <span className="font-semibold text-sm">AI Chat</span>
           </Link>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden h-8 w-8"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
-        <div className="p-4 space-y-2">
-          <Button onClick={createNewChat} className="w-full">
-            <MessageSquare className="h-4 w-4 mr-2" />
+        {/* New Chat Button */}
+        <div className="p-3">
+          <Button
+            onClick={createNewChat}
+            className="w-full justify-start gap-2 h-9 font-normal"
+            variant="outline"
+          >
+            <Plus className="h-4 w-4" />
             New Chat
           </Button>
-          <Link href="/">
-            <Button variant="outline" className="w-full">
-              <Home className="h-4 w-4 mr-2" />
-              Home
-            </Button>
-          </Link>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4">
-          <div className="text-xs font-semibold text-muted-foreground mb-2 px-2">
-            RECENT CHATS
-          </div>
+        {/* Chat History */}
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
           <div className="space-y-1">
-            {chats.map(chat => (
-              <div
+            {chats.map((chat) => (
+              <motion.div
                 key={chat.id}
-                className={`group flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-secondary ${
-                  currentChatId === chat.id ? 'bg-secondary' : ''
-                }`}
-                onClick={() => setCurrentChatId(chat.id)}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className={`
+                  group relative flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer
+                  transition-colors duration-150
+                  ${currentChatId === chat.id
+                    ? 'bg-secondary/80 text-foreground'
+                    : 'hover:bg-secondary/50 text-muted-foreground hover:text-foreground'
+                  }
+                `}
+                onClick={() => {
+                  setCurrentChatId(chat.id)
+                  setSidebarOpen(false)
+                }}
               >
-                <span className="truncate text-sm flex-1">{chat.title}</span>
+                <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate font-medium">{chat.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {chat.messages.length} {chat.messages.length === 1 ? 'message' : 'messages'}
+                  </p>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                   onClick={(e) => {
                     e.stopPropagation()
                     deleteChat(chat.id)
                   }}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
                 </Button>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
-      </aside>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+        {/* Sidebar Footer */}
+        <div className="border-t border-border/50 p-3">
+          <Link href="/">
+            <Button variant="ghost" className="w-full justify-start gap-2 h-9 font-normal">
+              <Home className="h-4 w-4" />
+              Back to Home
+            </Button>
+          </Link>
+        </div>
+      </motion.aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
         {currentChat ? (
           <>
             {/* Header */}
-            <div className="border-b p-4 bg-card">
-              <div className="flex items-center justify-between max-w-4xl mx-auto">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium">Model:</span>
-                  <Select value={currentChat.model} onValueChange={handleModelChange}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AI_MODELS.map(m => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {currentChat.messages.length} messages
-                </div>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="max-w-4xl mx-auto space-y-6">
-                {currentChat.messages.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Bot className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Start a conversation</h3>
-                    <p className="text-muted-foreground">
-                      Ask me anything! I'm here to help.
-                    </p>
-                  </div>
-                ) : (
-                  currentChat.messages.map(message => (
-                    <div
-                      key={message.id}
-                      className={`flex items-start space-x-3 ${
-                        message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
-                      }`}
-                    >
-                      <Avatar className="flex-shrink-0">
-                        {message.role === 'user' ? (
-                          <AvatarFallback>
-                            <User className="h-4 w-4" />
-                          </AvatarFallback>
-                        ) : (
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            <Bot className="h-4 w-4" />
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <Card
-                        className={`flex-1 p-4 ${
-                          message.role === 'user' ? 'bg-primary text-primary-foreground' : ''
-                        }`}
-                      >
-                        {message.role === 'user' ? (
-                          <p className="whitespace-pre-wrap">{message.content}</p>
-                        ) : (
-                          <div className="prose prose-sm dark:prose-invert max-w-none">
-                            <ReactMarkdown>{message.content}</ReactMarkdown>
-                          </div>
-                        )}
-                      </Card>
+            <header className="h-14 border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="h-full max-w-4xl mx-auto px-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="lg:hidden h-9 w-9"
+                    onClick={() => setSidebarOpen(true)}
+                    aria-label="Open sidebar"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                      <Sparkles className="h-4 w-4 text-primary-foreground" />
                     </div>
-                  ))
-                )}
+                    <div className="hidden sm:block">
+                      <p className="text-sm font-semibold leading-none">{currentChat.title}</p>
+                      <p className="text-xs text-muted-foreground">{currentChat.messages.length} messages</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => deleteChat(currentChat.id)}
+                  aria-label="Delete current chat"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </header>
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="max-w-4xl mx-auto px-4 py-8">
+                <AnimatePresence initial={false}>
+                  {currentChat.messages.length === 0 ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex flex-col items-center justify-center py-20 text-center"
+                    >
+                      <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6">
+                        <Bot className="h-8 w-8 text-primary" />
+                      </div>
+                      <h3 className="text-2xl font-semibold mb-2">How can I help you today?</h3>
+                      <p className="text-muted-foreground text-sm max-w-md">
+                        I'm an AI assistant powered by Google Gemini. Ask me anything!
+                      </p>
+                    </motion.div>
+                  ) : (
+                    currentChat.messages.map((message, index) => (
+                      <motion.div
+                        key={message.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className={`group mb-8 ${message.role === 'user' ? 'flex justify-end' : ''}`}
+                      >
+                        <div className={`flex gap-4 max-w-[85%] ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                          {/* Avatar */}
+                          <div className="flex-shrink-0">
+                            <Avatar className="h-8 w-8 border border-border/50">
+                              {message.role === 'user' ? (
+                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                  <User className="h-4 w-4" />
+                                </AvatarFallback>
+                              ) : (
+                                <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-xs">
+                                  <Bot className="h-4 w-4" />
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                          </div>
+
+                          {/* Message Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className={`
+                              ${message.role === 'user'
+                                ? 'bg-primary text-primary-foreground rounded-2xl px-4 py-3'
+                                : ''
+                              }
+                            `}>
+                              {message.role === 'user' ? (
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                                  {message.content}
+                                </p>
+                              ) : (
+                                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-secondary/50 prose-pre:border prose-pre:border-border/50">
+                                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Message Actions (AI only) */}
+                            {message.role === 'assistant' && (
+                              <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(message.content, message.id)}
+                                  className="h-7 px-2 text-xs"
+                                >
+                                  {copiedId === message.id ? (
+                                    <>
+                                      <Check className="h-3 w-3 mr-1" />
+                                      Copied
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="h-3 w-3 mr-1" />
+                                      Copy
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </AnimatePresence>
+
+                {/* Loading State */}
                 {loading && (
-                  <div className="flex items-start space-x-3">
-                    <Avatar className="flex-shrink-0">
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        <Bot className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <Card className="p-4">
-                      <div className="flex items-center space-x-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-8"
+                  >
+                    <div className="flex gap-4">
+                      <Avatar className="h-8 w-8 border border-border/50">
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+                          <Bot className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex items-center gap-2 px-4 py-3 bg-secondary/30 rounded-2xl">
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         <span className="text-sm text-muted-foreground">Thinking...</span>
                       </div>
-                    </Card>
-                  </div>
+                    </div>
+                  </motion.div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
             </div>
 
-            {/* Input */}
-            <div className="border-t p-4 bg-card">
-              <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-                <div className="flex space-x-2">
-                  <Textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Type your message... (Shift+Enter for new line)"
-                    className="min-h-[60px] max-h-[200px] resize-none"
-                    disabled={loading}
-                  />
-                  <Button
-                    type="submit"
-                    disabled={loading || !input.trim()}
-                    size="icon"
-                    className="h-[60px] w-[60px]"
-                  >
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </form>
+            {/* Input Area */}
+            <div className="border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="max-w-4xl mx-auto px-4 py-4">
+                <form onSubmit={handleSubmit} className="relative">
+                  <div className="relative flex items-end gap-2 bg-secondary/30 rounded-2xl border border-border/50 focus-within:border-primary/50 transition-colors p-2">
+                    <Textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Message AI..."
+                      className="flex-1 min-h-[44px] max-h-[200px] resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-2 py-2 text-sm placeholder:text-muted-foreground/50"
+                      disabled={loading}
+                      rows={1}
+                    />
+                    <Button
+                      type="submit"
+                      disabled={loading || !input.trim()}
+                      size="icon"
+                      className="h-9 w-9 rounded-xl flex-shrink-0"
+                    >
+                      {loading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground/60 mt-2 text-center">
+                    AI can make mistakes. Check important information.
+                  </p>
+                </form>
+              </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No chat selected</h3>
-              <p className="text-muted-foreground mb-4">Create a new chat to get started</p>
-              <Button onClick={createNewChat}>
-                <MessageSquare className="h-4 w-4 mr-2" />
+          <div className="flex-1 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center"
+            >
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mx-auto mb-6">
+                <MessageSquare className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">No chat selected</h3>
+              <p className="text-muted-foreground text-sm mb-6">
+                Start a new conversation to begin
+              </p>
+              <Button onClick={createNewChat} className="gap-2">
+                <Plus className="h-4 w-4" />
                 New Chat
               </Button>
-            </div>
+            </motion.div>
           </div>
         )}
       </div>
